@@ -22,8 +22,8 @@ start_text = """
                                                                                 
 Select an action:
 
-    1. Run clicker
-    2. Create session
+    1. Create session
+    2. Run clicker
 """
 
 global tg_clients
@@ -40,7 +40,7 @@ def get_session_names() -> list[str]:
 
 def get_proxies() -> list[Proxy]:
     if settings.USE_PROXY_FROM_FILE:
-        with open(file="bot/config/proxies.txt", encoding="utf-8-sig") as file:
+        with open(file="proxies.txt", encoding="utf-8-sig") as file:
             proxies = [Proxy.from_str(proxy=row.strip()).as_url for row in file]
     else:
         proxies = []
@@ -95,12 +95,12 @@ async def process() -> None:
                 action = int(action)
                 break
 
-    if action == 1:
+    if action == 2:
         tg_clients = await get_tg_clients()
 
         await run_tasks(tg_clients=tg_clients)
 
-    elif action == 2:
+    elif action == 1:
         await register_sessions()
 
 

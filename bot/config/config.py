@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     PLAY_GAMES: bool = True
     POINTS: list[int] = [190, 230]
 
+    DELAY_ACCOUNT: list[int] = [0, 300]
+
     USE_REF: bool = False
     REF_ID: str = ''
 

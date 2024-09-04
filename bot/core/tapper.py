@@ -491,7 +491,8 @@ class Tapper:
         if proxy:
             await self.check_proxy(http_client=http_client, proxy=proxy)
 
-        #print(init_data)
+        delay_account = random.randint(settings.DELAY_ACCOUNT[0], settings.DELAY_ACCOUNT[1])
+        await asyncio.sleep(delay_account)
 
         while True:
             try:
@@ -564,7 +565,7 @@ class Tapper:
                         await asyncio.sleep(1)
 
                     elif end_time is not None and timestamp is not None:
-                        sleep_duration = end_time - timestamp
+                        sleep_duration = end_time - timestamp + random.uniform(100, 400)
                         self.info(f"<lc>[FARMING]</lc> Sleep {format_duration(sleep_duration)}")
                         login_need = True
                         await asyncio.sleep(sleep_duration)
