@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     API_HASH: str
 
     PLAY_GAMES: bool = True
-    POINTS: list[int] = [190, 230]
+    POINTS: list[int] = [150, 200]
 
     DELAY_ACCOUNT: list[int] = [0, 300]
 

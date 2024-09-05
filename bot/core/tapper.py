@@ -186,7 +186,7 @@ class Tapper:
                 if settings.USE_REF is False:
 
                     json_data = {"query": initdata}
-                    resp = await http_client.post("https://gateway.blum.codes/v1/auth/provider"
+                    resp = await http_client.post("https://user-domain.blum.codes/api/v1/auth/provider"
                                                   "/PROVIDER_TELEGRAM_MINI_APP",
                                                   json=json_data, ssl=False)
                     if resp.status == 520:
