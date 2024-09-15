@@ -280,7 +280,7 @@ class Tapper:
 
     async def claim_task(self, http_client: aiohttp.ClientSession, task_id):
         try:
-            resp = await http_client.post(f'https://game-domain.blum.codes/api/v1/tasks/{task_id}/claim',
+            resp = await http_client.post(f'https://earn-domain.blum.codes/api/v1/tasks/{task_id}/claim',
                                           ssl=False)
             resp_json = await resp.json()
 
@@ -292,7 +292,7 @@ class Tapper:
 
     async def start_task(self, http_client: aiohttp.ClientSession, task_id):
         try:
-            resp = await http_client.post(f'https://game-domain.blum.codes/api/v1/tasks/{task_id}/start',
+            resp = await http_client.post(f'https://earn-domain.blum.codes/api/v1/tasks/{task_id}/start',
                                           ssl=False)
             resp_json = await resp.json()
             
@@ -301,16 +301,14 @@ class Tapper:
 
     async def get_tasks(self, http_client: aiohttp.ClientSession):
         try:
-            while True:
-                resp = await http_client.get('https://game-domain.blum.codes/api/v1/tasks', ssl=False)
-                if resp.status not in [200, 201]:
-                    continue
-                else:
-                    break
+            resp = await http_client.get('https://earn-domain.blum.codes/api/v1/tasks', ssl=False)
             resp_json = await resp.json()
 
+            if resp.status not in [200, 201]:
+                return []
+
             #logger.debug(f"{self.session_name} | get_tasks response: {resp_json}")
-            tasks = [element for sublist in resp_json for element in sublist.get("tasks")]
+            tasks = [element for sublist in resp_json if "tasks" in sublist for element in sublist["tasks"]]
 
             if isinstance(resp_json, list):
                 return tasks
@@ -401,12 +399,7 @@ class Tapper:
 
     async def friend_balance(self, http_client: aiohttp.ClientSession):
         try:
-            while True:
-                resp = await http_client.get("https://gateway.blum.codes/v1/friends/balance", ssl=False)
-                if resp.status not in [200, 201]:
-                    continue
-                else:
-                    break
+            resp = await http_client.get("https://gateway.blum.codes/v1/friends/balance", ssl=False)
             resp_json = await resp.json()
             claim_amount = resp_json.get("amountForClaim")
             is_available = resp_json.get("canClaim")
@@ -535,6 +528,7 @@ class Tapper:
                 for task in tasks:
                     if task.get('status'):
                         if task['status'] == "NOT_STARTED" and task['type'] != "PROGRESS_TARGET":
+                            self.info(f"Starting task {task['id']}!")
                             await self.start_task(http_client=http_client, task_id=task["id"])
                             await asyncio.sleep(random.uniform(3, 5))
 
