@@ -337,8 +337,7 @@ class Tapper:
                     logger.info(f"<light-yellow>{self.session_name}</light-yellow> | Finish play in game!"
                                 f" reward: {points}")
                 else:
-                    logger.info(f"<light-yellow>{self.session_name}</light-yellow> | Couldn't play game,"
-                                f" msg: {msg} play_passes: {play_passes}")
+                    logger.info(f"{self.session_name} | Couldn't play game!")
                     break
 
                 await asyncio.sleep(random.uniform(30, 40))
@@ -399,7 +398,7 @@ class Tapper:
 
     async def friend_balance(self, http_client: aiohttp.ClientSession):
         try:
-            resp = await http_client.get("https://gateway.blum.codes/v1/friends/balance", ssl=False)
+            resp = await http_client.get("https://user-domain.blum.codes/api/v1/friends/balance", ssl=False)
             resp_json = await resp.json()
             claim_amount = resp_json.get("amountForClaim")
             is_available = resp_json.get("canClaim")
@@ -413,11 +412,11 @@ class Tapper:
         try:
 
 
-            resp = await http_client.post("https://gateway.blum.codes/v1/friends/claim", ssl=False)
+            resp = await http_client.post("https://user-domain.blum.codes/api/v1/friends/claim", ssl=False)
             resp_json = await resp.json()
             amount = resp_json.get("claimBalance")
             if resp.status != 200:
-                resp = await http_client.post("https://gateway.blum.codes/v1/friends/claim", ssl=False)
+                resp = await http_client.post("https://user-domain.blum.codes/api/v1/friends/claim", ssl=False)
                 resp_json = await resp.json()
                 amount = resp_json.get("claimBalance")
 
