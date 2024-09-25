@@ -20,6 +20,8 @@ from bot.utils import logger
 from bot.exceptions import InvalidSession
 from .headers import headers
 from .helper import format_duration
+from datetime import datetime
+import pytz
 
 
 class Tapper:
@@ -135,24 +137,22 @@ class Tapper:
                 except (Unauthorized, UserDeactivated, AuthKeyUnregistered):
                     raise InvalidSession(self.session_name)
 
-            if settings.REF_ID == '':
-                self.start_param = 'ref_QwD3tLsY8f'
-            else:
-                self.start_param = settings.REF_ID
+            # if settings.REF_ID == '':
+            #     self.start_param = 'ref_QwD3tLsY8f'
+            # else:
+            #     self.start_param = settings.REF_ID
 
-            peer = await self.tg_client.resolve_peer('BlumCryptoBot')
+            peer = await self.tg_client.resolve_peer('notpixel')
             InputBotApp = types.InputBotAppShortName(bot_id=peer, short_name="app")
 
             web_view = await self.tg_client.invoke(RequestAppWebView(
                 peer=peer,
                 app=InputBotApp,
                 platform='android',
-                write_allowed=True,
-                start_param=self.start_param
+                write_allowed=True
             ))
 
             auth_url = web_view.url
-            #print(auth_url)
             tg_web_data = unquote(
                 string=auth_url.split('tgWebAppData=', maxsplit=1)[1].split('&tgWebAppVersion', maxsplit=1)[0])
 
@@ -181,287 +181,114 @@ class Tapper:
 
     async def login(self, http_client: aiohttp.ClientSession, initdata):
         try:
-            await http_client.options(url='https://gateway.blum.codes/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP')
-            while True:
-                if settings.USE_REF is False:
 
-                    json_data = {"query": initdata}
-                    resp = await http_client.post("https://user-domain.blum.codes/api/v1/auth/provider"
-                                                  "/PROVIDER_TELEGRAM_MINI_APP",
-                                                  json=json_data, ssl=False)
-                    if resp.status == 520:
-                        self.warning('Relogin')
-                        await asyncio.sleep(delay=5)
-                        continue
-                    #self.debug(f'login text {await resp.text()}')
-                    resp_json = await resp.json()
+            resp = await http_client.get("https://notpx.app/api/v1/users/me", ssl=False)
 
-                    return resp_json.get("token").get("access"), resp_json.get("token").get("refresh")
+            #self.debug(f'login text {await resp.text()}')
+            resp_json = await resp.json()
 
-                else:
-
-                    json_data = {"query": initdata, "username": self.username,
-                                 "referralToken": self.start_param.split('_')[1]}
-
-                    resp = await http_client.post("https://gateway.blum.codes/v1/auth/provider"
-                                                  "/PROVIDER_TELEGRAM_MINI_APP",
-                                                  json=json_data, ssl=False)
-                    if resp.status == 520:
-                        self.warning('Relogin')
-                        await asyncio.sleep(delay=5)
-                        continue
-                    #self.debug(f'login text {await resp.text()}')
-                    resp_json = await resp.json()
-
-                    if resp_json.get("message") == "rpc error: code = AlreadyExists desc = Username is not available":
-                        while True:
-                            name = self.username
-                            rand_letters = ''.join(random.choices(string.ascii_lowercase, k=random.randint(3, 8)))
-                            new_name = name + rand_letters
-
-                            json_data = {"query": initdata, "username": new_name,
-                                         "referralToken": self.start_param.split('_')[1]}
-
-                            resp = await http_client.post(
-                                "https://gateway.blum.codes/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP",
-                                json=json_data, ssl=False)
-                            if resp.status == 520:
-                                self.warning('Relogin')
-                                await asyncio.sleep(delay=5)
-                                continue
-                            #self.debug(f'login text {await resp.text()}')
-                            resp_json = await resp.json()
-
-                            if resp_json.get("token"):
-                                self.success(f'Registered using ref - {self.start_param} and nickname - {new_name}')
-                                return resp_json.get("token").get("access"), resp_json.get("token").get("refresh")
-
-                            elif resp_json.get("message") == 'account is already connected to another user':
-
-                                json_data = {"query": initdata}
-                                resp = await http_client.post("https://gateway.blum.codes/v1/auth/provider"
-                                                              "/PROVIDER_TELEGRAM_MINI_APP",
-                                                              json=json_data, ssl=False)
-                                if resp.status == 520:
-                                    self.warning('Relogin')
-                                    await asyncio.sleep(delay=5)
-                                    continue
-                                resp_json = await resp.json()
-                                #self.debug(f'login text {await resp.text()}')
-                                return resp_json.get("token").get("access"), resp_json.get("token").get("refresh")
-
-                            else:
-                                self.info(f'Username taken, retrying register with new name')
-                                await asyncio.sleep(1)
-
-                    elif resp_json.get("message") == 'account is already connected to another user':
-
-                        json_data = {"query": initdata}
-                        resp = await http_client.post("https://gateway.blum.codes/v1/auth/provider"
-                                                      "/PROVIDER_TELEGRAM_MINI_APP",
-                                                      json=json_data, ssl=False)
-                        if resp.status == 520:
-                            self.warning('Relogin')
-                            await asyncio.sleep(delay=5)
-                            continue
-                        #self.debug(f'login text {await resp.text()}')
-                        resp_json = await resp.json()
-
-                        return resp_json.get("token").get("access"), resp_json.get("token").get("refresh")
-
-                    elif resp_json.get("token"):
-
-                        self.success(f'Registered using ref - {self.start_param} and nickname - {self.username}')
-                        return resp_json.get("token").get("access"), resp_json.get("token").get("refresh")
+            return resp_json
 
         except Exception as error:
             logger.error(f"<light-yellow>{self.session_name}</light-yellow> | Login error {error}")
             return None, None
 
-    async def claim_task(self, http_client: aiohttp.ClientSession, task_id):
-        try:
-            resp = await http_client.post(f'https://earn-domain.blum.codes/api/v1/tasks/{task_id}/claim',
-                                          ssl=False)
-            resp_json = await resp.json()
-
-            #logger.debug(f"{self.session_name} | claim_task response: {resp_json}")
-
-            return resp_json.get('status') == "FINISHED"
-        except Exception as error:
-            logger.error(f"<light-yellow>{self.session_name}</light-yellow> | Claim task error {error}")
-
-    async def start_task(self, http_client: aiohttp.ClientSession, task_id):
-        try:
-            resp = await http_client.post(f'https://earn-domain.blum.codes/api/v1/tasks/{task_id}/start',
-                                          ssl=False)
-            resp_json = await resp.json()
-            
-        except Exception as error:
-            logger.error(f"<light-yellow>{self.session_name}</light-yellow> | Start complete error {error}")
-
-    async def get_tasks(self, http_client: aiohttp.ClientSession):
-        try:
-            resp = await http_client.get('https://earn-domain.blum.codes/api/v1/tasks', ssl=False)
-            resp_json = await resp.json()
-
-            if resp.status not in [200, 201]:
-                return []
-
-            #logger.debug(f"{self.session_name} | get_tasks response: {resp_json}")
-            tasks = [element for sublist in resp_json if "tasks" in sublist for element in sublist["tasks"]]
-
-            if isinstance(resp_json, list):
-                return tasks
-            else:
-                logger.error(f"{self.session_name} | Unexpected response format in get_tasks: {resp_json}")
-                return []
-        except Exception as error:
-            logger.error(f"<light-yellow>{self.session_name}</light-yellow> | Get tasks error {error}")
-
-    async def play_game(self, http_client: aiohttp.ClientSession, play_passes):
-        try:
-            while play_passes:
-                game_id = await self.start_game(http_client=http_client)
-
-                if not game_id or game_id == "cannot start game":
-                    logger.info(f"<light-yellow>{self.session_name}</light-yellow> | Couldn't start play in game!"
-                                f" play_passes: {play_passes}")
-                    break
-                else:
-                    self.success("Started playing game")
-
-                await asyncio.sleep(random.uniform(30, 40))
-
-                msg, points = await self.claim_game(game_id=game_id, http_client=http_client)
-                if isinstance(msg, bool) and msg:
-                    logger.info(f"<light-yellow>{self.session_name}</light-yellow> | Finish play in game!"
-                                f" reward: {points}")
-                else:
-                    logger.info(f"{self.session_name} | Couldn't play game!")
-                    break
-
-                await asyncio.sleep(random.uniform(30, 40))
-
-                play_passes -= 1
-        except Exception as e:
-            logger.error(f"<light-yellow>{self.session_name}</light-yellow> | Error occurred during play game: {e}")
-            await asyncio.sleep(random.randint(0, 5))
-
-    async def start_game(self, http_client: aiohttp.ClientSession):
-        try:
-            resp = await http_client.post("https://game-domain.blum.codes/api/v1/game/play", ssl=False)
-            response_data = await resp.json()
-            if "gameId" in response_data:
-                return response_data.get("gameId")
-            elif "message" in response_data:
-                return response_data.get("message")
-        except Exception as e:
-            self.error(f"Error occurred during start game: {e}")
-
-    async def claim_game(self, game_id: str, http_client: aiohttp.ClientSession):
-        try:
-            points = random.randint(settings.POINTS[0], settings.POINTS[1])
-            json_data = {"gameId": game_id, "points": points}
-
-            resp = await http_client.post("https://game-domain.blum.codes/api/v1/game/claim", json=json_data,
-                                          ssl=False)
-            if resp.status != 200:
-                resp = await http_client.post("https://game-domain.blum.codes/api/v1/game/claim", json=json_data,
-                                              ssl=False)
-
-            txt = await resp.text()
-
-            return True if txt == 'OK' else txt, points
-        except Exception as e:
-            self.error(f"Error occurred during claim game: {e}")
-
     async def claim(self, http_client: aiohttp.ClientSession):
         try:
-            resp = await http_client.post("https://game-domain.blum.codes/api/v1/farming/claim", ssl=False)
-            if resp.status != 200:
-                resp = await http_client.post("https://game-domain.blum.codes/api/v1/farming/claim", ssl=False)
+            resp = await http_client.get("https://notpx.app/api/v1/mining/claim", ssl=False)
+            if resp.status == 200:
+                self.success(f"Successfully claim coins!")
+            else:
+                self.error(f"Can't do task!")
 
-            resp_json = await resp.json()
-
-            return int(resp_json.get("timestamp") / 1000), resp_json.get("availableBalance")
         except Exception as e:
             self.error(f"Error occurred during claim: {e}")
 
-    async def start(self, http_client: aiohttp.ClientSession):
+    async def paint(self, http_client: aiohttp.ClientSession, color: str):
         try:
-            resp = await http_client.post("https://game-domain.blum.codes/api/v1/farming/start", ssl=False)
+            pixelId = random.randint(settings.PIXEL_IDS[0], settings.PIXEL_IDS[1])
+            json_data = {"newColor": color, "pixelId": pixelId}
 
-            if resp.status != 200:
-                resp = await http_client.post("https://game-domain.blum.codes/api/v1/farming/start", ssl=False)
-        except Exception as e:
-            self.error(f"Error occurred during start: {e}")
-
-    async def friend_balance(self, http_client: aiohttp.ClientSession):
-        try:
-            resp = await http_client.get("https://user-domain.blum.codes/api/v1/friends/balance", ssl=False)
+            resp = await http_client.post("https://notpx.app/api/v1/repaint/start", json=json_data, ssl=False)
             resp_json = await resp.json()
-            claim_amount = resp_json.get("amountForClaim")
-            is_available = resp_json.get("canClaim")
-
-            return (claim_amount,
-                    is_available)
+            return resp_json["balance"]
         except Exception as e:
-            self.error(f"Error occurred during friend balance: {e}")
+            self.error(f"Error occurred during paint: {e}")
 
-    async def friend_claim(self, http_client: aiohttp.ClientSession):
+    async def get_status(self, http_client: aiohttp.ClientSession):
         try:
-
-
-            resp = await http_client.post("https://user-domain.blum.codes/api/v1/friends/claim", ssl=False)
+            resp = await http_client.get("https://notpx.app/api/v1/mining/status", ssl=False)
             resp_json = await resp.json()
-            amount = resp_json.get("claimBalance")
-            if resp.status != 200:
-                resp = await http_client.post("https://user-domain.blum.codes/api/v1/friends/claim", ssl=False)
-                resp_json = await resp.json()
-                amount = resp_json.get("claimBalance")
+            charges = resp_json.get("charges")
+            user_balance = resp_json.get("userBalance")
+            tasks = resp_json.get("tasks")
+            boosts = resp_json.get("boosts")
+            coins = resp_json.get("coins")
 
-
-
-            return amount
+            return (charges,
+                    user_balance, tasks, boosts, coins)
         except Exception as e:
-            self.error(f"Error occurred during friends claim: {e}")
+            self.error(f"Error occurred during get status: {e}")
 
-    async def balance(self, http_client: aiohttp.ClientSession):
+    async def upgrade_paint_reward(self, http_client: aiohttp.ClientSession):
         try:
-            resp = await http_client.get("https://game-domain.blum.codes/api/v1/user/balance", ssl=False)
+            resp = await http_client.get("https://notpx.app/api/v1/mining/boost/check/paintReward", ssl=False)
             resp_json = await resp.json()
+            paint_reward = resp_json.get("paintReward")
 
-            timestamp = resp_json.get("timestamp")
-            play_passes = resp_json.get("playPasses")
+            if paint_reward:
+                self.success(f"Successfully upgrade paint reward!")
+            else:
+                self.error(f"Can't upgrade paint reward!")
 
-            start_time = None
-            end_time = None
-            if resp_json.get("farming"):
-                start_time = resp_json["farming"].get("startTime")
-                end_time = resp_json["farming"].get("endTime")
-
-            return (int(timestamp / 1000) if timestamp is not None else None,
-                    int(start_time / 1000) if start_time is not None else None,
-                    int(end_time / 1000) if end_time is not None else None,
-                    play_passes)
         except Exception as e:
-            self.error(f"Error occurred during balance: {e}")
+            self.error(f"Error occurred during paint reward: {e}")
 
-    async def claim_daily_reward(self, http_client: aiohttp.ClientSession):
+    async def upgrade_recharge_speed(self, http_client: aiohttp.ClientSession):
         try:
-            resp = await http_client.post("https://game-domain.blum.codes/api/v1/daily-reward?offset=-180",
-                                          ssl=False)
-            txt = await resp.text()
-            return True if txt == 'OK' else txt
+            resp = await http_client.get("https://notpx.app/api/v1/mining/boost/check/reChargeSpeed", ssl=False)
+            resp_json = await resp.json()
+            paint_reward = resp_json.get("reChargeSpeed")
+
+            if paint_reward:
+                self.success(f"Successfully upgrade recharge speed!")
+            else:
+                self.error(f"Can't upgrade recharge speed!")
+
         except Exception as e:
-            self.error(f"Error occurred during claim daily reward: {e}")
+            self.error(f"Error occurred during recharge speed: {e}")
 
-    async def refresh_token(self, http_client: aiohttp.ClientSession, token):
-        json_data = {'refresh': token}
-        resp = await http_client.post("https://gateway.blum.codes/v1/auth/refresh", json=json_data, ssl=False)
-        resp_json = await resp.json()
+    async def upgrade_energy_limit(self, http_client: aiohttp.ClientSession):
+        try:
+            resp = await http_client.get("https://notpx.app/api/v1/mining/boost/check/energyLimit", ssl=False)
+            resp_json = await resp.json()
+            paint_reward = resp_json.get("energyLimit")
 
-        return resp_json.get('access'), resp_json.get('refresh')
+            if paint_reward:
+                self.success(f"Successfully upgrade energy limit!")
+            else:
+                self.error(f"Can't upgrade energy limit!")
+
+        except Exception as e:
+            self.error(f"Error occurred during energy limit: {e}")
+
+    async def check_task(self, http_client: aiohttp.ClientSession, task: str):
+        task_url = ''
+        if "x:" in task:
+            if ':' in task:
+                key, value = task.split(':')
+                task_url = f"{key}?name={value}"
+        else:
+            task_url = task
+        try:
+            resp = await http_client.get(f"https://notpx.app/api/v1/mining/task/check/{task_url}", ssl=False)
+            if resp.status == 200:
+                self.success(f"Successfully do task {task}!")
+            else:
+                self.error(f"Can't do task!")
+
+        except Exception as e:
+            self.error(f"Error occurred during check task: {e}")
 
     async def check_proxy(self, http_client: aiohttp.ClientSession, proxy: Proxy) -> None:
         try:
@@ -472,10 +299,6 @@ class Tapper:
             logger.error(f"<light-yellow>{self.session_name}</light-yellow> | Proxy: {proxy} | Error: {error}")
 
     async def run(self, proxy: str | None) -> None:
-        access_token = None
-        refresh_token = None
-        login_need = True
-
         proxy_conn = ProxyConnector().from_url(proxy) if proxy else None
 
         http_client = CloudflareScraper(headers=headers, connector=proxy_conn)
@@ -488,83 +311,68 @@ class Tapper:
 
         while True:
             try:
-                if login_need:
-                    if "Authorization" in http_client.headers:
-                        del http_client.headers["Authorization"]
+                if "Authorization" in http_client.headers:
+                    del http_client.headers["Authorization"]
 
-                    init_data = await self.get_tg_web_data(proxy=proxy)
+                init_data = await self.get_tg_web_data(proxy=proxy)
 
-                    access_token, refresh_token = await self.login(http_client=http_client, initdata=init_data)
+                http_client.headers["Authorization"] = f"initData {init_data}"
 
-                    http_client.headers["Authorization"] = f"Bearer {access_token}"
-
-                    if self.first_run is not True:
-                        self.success("Logged in successfully")
-                        self.first_run = True
-
-                    login_need = False
-
-                msg = await self.claim_daily_reward(http_client=http_client)
-                if isinstance(msg, bool) and msg:
-                    logger.success(f"<light-yellow>{self.session_name}</light-yellow> | Claimed daily reward!")
-
-                timestamp, start_time, end_time, play_passes = await self.balance(http_client=http_client)
-
-                if isinstance(play_passes, int):
-                    self.info(f'You have {play_passes} play passes')
-
-                claim_amount, is_available = await self.friend_balance(http_client=http_client)
-
-                if claim_amount != 0 and is_available:
-                    amount = await self.friend_claim(http_client=http_client)
-                    self.success(f"Claimed friend ref reward {amount}")
-
-                if play_passes and play_passes > 0 and settings.PLAY_GAMES is True:
-                    await self.play_game(http_client=http_client, play_passes=play_passes)
-
-                tasks = await self.get_tasks(http_client=http_client)
-
-                for task in tasks:
-                    if task.get('status'):
-                        if task['status'] == "NOT_STARTED" and task['type'] != "PROGRESS_TARGET":
-                            self.info(f"Starting task {task['id']}!")
-                            await self.start_task(http_client=http_client, task_id=task["id"])
-                            await asyncio.sleep(random.uniform(3, 5))
-
-                tasks = await self.get_tasks(http_client=http_client)
-                for task in tasks:
-                    if task.get('status'):
-                        if task['status'] == "READY_FOR_CLAIM":
-                            status = await self.claim_task(http_client=http_client, task_id=task["id"])
-                            if status:
-                                logger.success(f"<light-yellow>{self.session_name}</light-yellow> | Claimed task!")
-                            await asyncio.sleep(random.uniform(3, 5))
+                login_data = await self.login(http_client=http_client, initdata=init_data)
+                if self.first_run is not True:
+                    self.success("Logged in successfully!")
+                    self.first_run = True
 
 
-                #await asyncio.sleep(random.uniform(1, 3))
+                charges, user_balance, tasks, boosts, coins = await self.get_status(http_client=http_client)
+                self.info(f'Charges: {charges} | Balance: {user_balance}PX!')
 
-                try:
-                    timestamp, start_time, end_time, play_passes = await self.balance(http_client=http_client)
+                claim_tasks = [item for item in settings.TASKS if item not in tasks]
+                for task in claim_tasks:
+                    await self.check_task(http_client=http_client, task=task)
+                    await asyncio.sleep(random.uniform(10, 15))
 
-                    if start_time is None and end_time is None:
-                        await self.start(http_client=http_client)
-                        self.info(f"<lc>[FARMING]</lc> Start farming!")
-                        await asyncio.sleep(1)
+                if boosts.get('paintReward', 1) <= len(settings.PAINT_REWARDS_POINT) and user_balance > settings.PAINT_REWARDS_POINT[boosts.get('paintReward', 1) - 1]:
+                    await self.upgrade_paint_reward(http_client=http_client)
+                    charges, user_balance, tasks, boosts, coins = await self.get_status(http_client=http_client)
+                    await asyncio.sleep(random.uniform(5, 10))
 
-                    elif (start_time is not None and end_time is not None and timestamp is not None and
-                          timestamp >= end_time):
-                        timestamp, balance = await self.claim(http_client=http_client)
-                        self.success(f"<lc>[FARMING]</lc> Claimed reward! Balance: {balance}")
-                        await asyncio.sleep(1)
+                if boosts.get('energyLimit', 1) <= len(settings.ENERGY_LIMIT_POINT) and user_balance > settings.ENERGY_LIMIT_POINT[boosts.get('energyLimit', 1) - 1]:
+                    await self.upgrade_energy_limit(http_client=http_client)
+                    charges, user_balance, tasks, boosts, coins = await self.get_status(http_client=http_client)
+                    await asyncio.sleep(random.uniform(5, 10))
 
-                    elif end_time is not None and timestamp is not None:
-                        sleep_duration = end_time - timestamp + random.uniform(100, 400)
-                        self.info(f"<lc>[FARMING]</lc> Sleep {format_duration(sleep_duration)}")
-                        login_need = True
-                        await asyncio.sleep(sleep_duration)
+                if boosts.get('reChargeSpeed', 1) <= len(settings.RECHARGE_SPEED_POINT) and user_balance > settings.RECHARGE_SPEED_POINT[boosts.get('reChargeSpeed', 1) - 1]:
+                    await self.upgrade_recharge_speed(http_client=http_client)
+                    charges, user_balance, tasks, boosts, coins = await self.get_status(http_client=http_client)
+                    await asyncio.sleep(random.uniform(5, 10))
+                
+                color = random.choice(settings.COLORS)
+                while charges > 0:
+                    balance = await self.paint(http_client=http_client, color=color)
+                    self.success(f"Successfully paint | Balance: {balance}!")
+                    await asyncio.sleep(random.uniform(0, 10))
+                    charges -= 1
 
-                except Exception as e:
-                    self.error(f"<lc>[FARMING]</lc> Error in farming management: {e}")
+                if coins > 0.01:
+                    await self.claim(http_client=http_client)
+
+                current_time = datetime.now(pytz.timezone('Asia/Bangkok')).time()
+                # Define start and end of night time (00:00 to 08:00 SGT)
+                night_start = datetime.strptime("00:00", "%H:%M").time()
+                night_end = datetime.strptime("06:00", "%H:%M").time()
+
+                # Check if current time is within night time
+                remaining_time = 0
+                if night_start <= current_time < night_end and settings.SLEEP_BY_NIGHT_ENABLE:
+                    # Calculate remaining time to 8 AM (in seconds)
+                    remaining_time = (datetime.combine(datetime.today(), night_end) - datetime.combine(datetime.today(), current_time)).total_seconds() + random.randint(settings.SLEEP_BY_NIGHT[0], settings.SLEEP_BY_NIGHT[1])
+                    self.info(f"Sleep by night {remaining_time}s!")
+                else:
+                    remaining_time = random.randint(settings.SLEEP[0], settings.SLEEP[1])
+                    self.info(f"Sleep {remaining_time}s!")
+
+                await asyncio.sleep(remaining_time)
 
             except InvalidSession as error:
                 raise error

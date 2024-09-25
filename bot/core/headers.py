@@ -1,9 +1,9 @@
 headers = {
     'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'ru-RU,ru;q=0.9',
+    'Accept-Language': 'vi-VN,vi;q=0.9,en-GB;q=0.8,en;q=0.7,fr-FR;q=0.6,fr;q=0.5,en-US;q=0.4',
     'Connection': 'keep-alive',
     'Content-Type': 'application/json',
-    'Origin': 'https://telegram.blum.codes',
+    'Origin': 'https://image.notpx.app',
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
     'Sec-Fetch-Site': 'same-site',
