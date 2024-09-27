@@ -204,9 +204,63 @@ class Tapper:
         except Exception as e:
             self.error(f"Error occurred during claim: {e}")
 
-    async def paint(self, http_client: aiohttp.ClientSession, color: str):
+    async def paint(self, http_client: aiohttp.ClientSession):
+        PATH = [[' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ',' ',' ',' ','#','#','#','#','#','#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ',' ','#','#','#','#','#','#','#','#','#','#',' ',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ','#','#','#','*','*','#','#','*','*','#','#','#',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ','#','#','#','*','*','@','*','*','@','*','*','#','#','#',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ','#','#','*','*','*','*','*','*','*','*','*','*','#','#',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ','#','*','*','*','*','*','.','.','*','*','*','*','*','#',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ','#','*','*','*','*','*','.','.','*','*','*','*','*','#',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ','#','*','*','*','*','*','*','*','*','*','*','*','*','#',' ',' ',' ',' ',' ',' '],
+                [' ','*','*',' ',' ','#','#','*','*','.','.','.','.','.','.','*','*','#','#',' ',' ',' ',' ',' ',' '],
+                [' ','*','*','#',' ',' ','#','#','*','*','.','.','.','.','*','*','#','#',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ','#','#','#',' ',' ','#','*','*','*','.','.','*','*','*','#',' ',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ','#','#','#',' ','#','*','*','*','*','*','*','*','*','#',' ',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ','#','#','#','#','.','.','.','.','.','.','.','.','#','#','#',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ','#','#','#','#','*','*','$','$','*','*','#','#','#','#','#',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ','#','#','*','*','*','$','$','*','*','*','#','#','#','#','#',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ','#','*','*','*','*','*','*','*','*','*','*','#',' ','#','#','#',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ','#','*','*','*','*','*','*','*','*','*','*','#',' ',' ','#','#','#',' ',' '],
+                [' ',' ',' ',' ',' ',' ','#','*','*','*','*','*','*','*','*','*','*','#',' ',' ',' ','#','*','*',' '],
+                [' ',' ',' ',' ',' ',' ','#','#','*','*','*','*','*','*','*','*','#','#',' ',' ',' ',' ','*','*',' '],
+                [' ',' ',' ',' ',' ',' ','#','#','#','*','*','*','*','*','*','#','#','#',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ','#','#','#','#','#','#','#','#','#','#','#','#',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ','#','#','#','#',' ',' ',' ',' ','#','#','#','#',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ','#','#','#',' ',' ',' ',' ',' ',' ','#','#','#',' ',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ','*','*','*','*',' ',' ',' ',' ',' ',' ','*','*','*','*',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ','*','*','*','*',' ',' ',' ',' ',' ',' ','*','*','*','*',' ',' ',' ',' ',' ',' '],
+                [' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ']]
         try:
-            pixelId = random.randint(settings.PIXEL_IDS[0], settings.PIXEL_IDS[1])
+            # Find all occurrences of the keys in the grid
+            key_locations = [(r, c) for r in range(len(PATH)) for c in range(len(PATH[r]))]
+
+            # Randomly select one location
+            color = settings.PINK
+            random_key_location = random.choice(key_locations) if key_locations else None
+            # Get the value at the randomly selected location
+            random_key_value = PATH[random_key_location[0]][random_key_location[1]] if random_key_location else None
+            if random_key_value == ' ':
+                color = settings.PINK
+            elif random_key_value == '#':
+                color = settings.BLUE
+            elif random_key_value == '*':
+                color = settings.WHITE
+            elif random_key_value == '@':
+                color = settings.BLACK
+            elif random_key_value == '.':
+                color = settings.RED
+            elif random_key_value == '$':
+                color = settings.YELLOW
+                
+            x_location = settings.START_PIXEL_X + random_key_location[1] + 1
+            y_location = settings.START_PIXEL_Y + random_key_location[0] + 1
+
+            if x_location >= 1000:
+                x_location = "000"
+
+            pixelId = int(str(y_location) + str(x_location))
             json_data = {"newColor": color, "pixelId": pixelId}
 
             resp = await http_client.post("https://notpx.app/api/v1/repaint/start", json=json_data, ssl=False)
@@ -347,9 +401,8 @@ class Tapper:
                     charges, user_balance, tasks, boosts, coins = await self.get_status(http_client=http_client)
                     await asyncio.sleep(random.uniform(5, 10))
                 
-                color = random.choice(settings.COLORS)
                 while charges > 0:
-                    balance = await self.paint(http_client=http_client, color=color)
+                    balance = await self.paint(http_client=http_client)
                     self.success(f"Successfully paint | Balance: {balance}!")
                     await asyncio.sleep(random.uniform(0, 10))
                     charges -= 1
