@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     PIXEL_IDS: list[int] = [1, 1000000]
     PAINT_REWARDS_POINT: list[int] = [5, 100, 200, 300, 500, 600]
     RECHARGE_SPEED_POINT: list[int] = [5, 100, 200, 300, 400, 500]
-    ENERGY_LIMIT_POINT: list[int] = [5, 100, 200, 300, 400, 500]
+    ENERGY_LIMIT_POINT: list[int] = [5, 100, 200, 300, 400]
 
     DELAY_ACCOUNT: list[int] = [0, 300]
 
