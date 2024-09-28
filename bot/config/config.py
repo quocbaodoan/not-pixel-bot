@@ -15,13 +15,13 @@ class Settings(BaseSettings):
     DELAY_ACCOUNT: list[int] = [0, 300]
 
     SLEEP: list[int] = [3600, 6000]
-    SLEEP_BY_NIGHT: list[int] = [0, 6000]
+    SLEEP_BY_NIGHT: list[int] = [0, 10800]
     SLEEP_BY_NIGHT_ENABLE: bool = True
 
     USE_REF: bool = False
     REF_ID: str = ''
-    START_PIXEL_X: int = 973
-    START_PIXEL_Y: int = 901
+    START_PIXEL_X: int = 433
+    START_PIXEL_Y: int = 118
 
     USE_PROXY_FROM_FILE: bool = False
     TASKS: list[str] = ["joinSquad", "x:notcoin", "x:notpixel"]
